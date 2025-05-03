@@ -1,0 +1,112 @@
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+#define SENSOR_PIN A0 
+#define SAMPLES 1000   
+#define VREF 5.0      
+#define ADC_RESOLUTION 1024.0  
+#define BURDEN_RESISTOR 100.0 
+#define SENSITIVITY 0.05  
+
+float readACCurrent() {
+    float sum = 0;
+    for (int i = 0; i < SAMPLES; i++) {
+        int raw = analogRead(SENSOR_PIN); 
+        float voltage = (raw / ADC_RESOLUTION) * VREF;
+        float current = (voltage / SENSITIVITY); 
+        sum += sq(current); 
+        delayMicroseconds(500); 
+    }
+    float rmsCurrent = sqrt(sum / SAMPLES);
+    return rmsCurrent;
+}
+
+void setup() {
+  pinMode(8,INPUT);
+   pinMode(LED_BUILTIN, OUTPUT);
+  
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0,0);
+  lcd.print("AUTOMATIC");
+  lcd.setCursor(4,1);
+  lcd.print("IRRIGATION");
+  delay(3000);
+  lcd.clear();
+  lcd.setCursor(1,0);
+  lcd.print("**DESIGNED BY**");
+  delay(2000);
+  lcd.setCursor(0,1);
+  lcd.print("KAVIN TECHNICALS");
+  delay(3000);
+  lcd.clear();
+  Serial.begin(9600);
+}
+void loop() {
+    float current = readACCurrent();
+    int fval= current*20;
+    Serial.print("Current (A): ");
+   Serial.println(fval);
+   delay(500);
+     
+
+   lcd.setCursor(0,0);
+   lcd.print("Valve current=");
+   lcd.print(fval);
+   int vol= analogRead(A1);
+   int fvol=vol*0.63;
+   lcd.setCursor(0,1);
+   lcd.print("Ac voltage=");
+    lcd.setCursor(11,1);
+   lcd.print(fvol);
+   delay(3000);
+   lcd.clear();
+  
+   int flevel=digitalRead(8);
+  
+   if(flevel==HIGH)
+   { 
+    lcd.setCursor(4,0);
+     lcd.print("Motor on");
+     lcd.setCursor(0,1);
+     lcd.print("Water level high");
+   }
+   else
+   { lcd.setCursor(4,0);
+    lcd.print("Motor off");
+    lcd.setCursor(0,1);
+    lcd.print("water level low");
+    }
+    delay(3000);
+    lcd.clear();
+    if(flevel==HIGH)
+    {
+    if((fval>20)&&(flevel==HIGH))
+    {
+    lcd.setCursor(3,0);
+    lcd.print("valve status");
+    lcd.setCursor(5,1);
+    lcd.print("OK");
+    }
+    else
+    {
+      lcd.setCursor(3,0);
+    lcd.print("valve status");
+    lcd.setCursor(3,1);
+    lcd.print("FAILED");
+    digitalWrite(LED_BUILTIN,HIGH);
+    delay(3000);
+    digitalWrite(LED_BUILTIN,LOW);
+    lcd.setCursor(0,0);
+    lcd.print("CONTACT SERVICE");
+    lcd.setCursor(3,1);
+    lcd.print("9578851759");
+    }
+delay(2000);
+}
+lcd.clear();
+lcd.setCursor(2,0);
+lcd.print("KAVIN'S MAKE");
+delay(2000);
+lcd.clear();
+}
